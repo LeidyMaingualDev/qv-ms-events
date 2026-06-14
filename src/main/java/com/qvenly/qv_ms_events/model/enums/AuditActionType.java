@@ -1,0 +1,16 @@
+package com.qvenly.qv_ms_events.model.enums;
+
+public enum AuditActionType {
+    EVENT_CREATED,
+    EVENT_EDITED,
+    EVENT_PUBLISHED,
+    EVENT_STARTED,
+    EVENT_FINISHED,
+    EVENT_CANCELLED,
+    INVITATION_SENT,
+    INVITATION_CANCELLED,
+    MEMBER_ADDED,
+    MEMBER_ROLE_CHANGED,
+    MEMBER_REMOVED,
+    MEMBER_LEFT
+}
