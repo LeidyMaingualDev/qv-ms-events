@@ -26,4 +26,21 @@ public interface EventMemberRepository extends JpaRepository<EventMember, Long> 
     @Query("SELECT COUNT(m) FROM EventMember m WHERE m.eventId = :eventId " +
            "AND m.eventRole = :role AND m.status = 'ACTIVE'")
     long countActiveByEventAndRole(@Param("eventId") Long eventId, @Param("role") EventRole role);
+
+    /**
+     *  Usuarios por evento diferenciados por rol
+     * 
+     * @return
+     */
+     @Query("""
+        SELECT m.eventId,
+            COUNT(CASE WHEN m.eventRole = 'STAFF'       THEN 1 END),
+            COUNT(CASE WHEN m.eventRole = 'ATTENDEE'    THEN 1 END),
+            COUNT(CASE WHEN m.eventRole = 'JUDGE'       THEN 1 END),
+            COUNT(CASE WHEN m.eventRole = 'PARTICIPANT' THEN 1 END)
+        FROM EventMember m
+        WHERE m.status = 'ACTIVE'
+        GROUP BY m.eventId
+        """)
+    List<Object[]> countMembersByEventAndRole();
 }
