@@ -4,7 +4,6 @@ import com.qvenly.qv_ms_events.model.dto.request.event.CancelInvitationRequest;
 import com.qvenly.qv_ms_events.model.dto.request.event.SendInvitationRequest;
 import com.qvenly.qv_ms_events.model.dto.response.event.ApiResponse;
 import com.qvenly.qv_ms_events.model.dto.response.event.InvitationResponse;
-import com.qvenly.qv_ms_events.model.enums.event.EventRole;
 import com.qvenly.qv_ms_events.model.enums.event.InvitationStatus;
 import com.qvenly.qv_ms_events.service.event.InvitationService;
 import jakarta.validation.Valid;
@@ -14,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -36,10 +36,12 @@ public class InvitationController {
     public ResponseEntity<ApiResponse<InvitationService.BulkResult>> sendBulk(
             @PathVariable Long eventId,
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "defaultRole", defaultValue = "ATTENDEE") EventRole defaultRole,
+            @RequestParam(value = "expiresAt", required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime expiresAt,
             @RequestHeader("X-User-Email") String userEmail,
             @RequestHeader("X-Rol")        String role) {
-        InvitationService.BulkResult result = invitationService.sendBulkFromExcel(eventId, file, defaultRole, userEmail, role);
+        InvitationService.BulkResult result = invitationService.sendBulkFromExcel(eventId, file, expiresAt, userEmail, role);
         return ResponseEntity.ok(ApiResponse.success(
                 String.format("Proceso completado: %d enviadas, %d fallidas.", result.sent().size(), result.failed().size()), result));
     }
@@ -65,6 +67,13 @@ public class InvitationController {
                 ? invitationService.getInvitationsByStatus(eventId, status)
                 : invitationService.getInvitations(eventId);
         return ResponseEntity.ok(ApiResponse.success("Invitaciones obtenidas.", invitations));
+    }
+
+    @GetMapping("/api/invitations/preview/{token}")
+    public ResponseEntity<ApiResponse<InvitationResponse>> previewInvitation(
+            @PathVariable String token) {
+        return ResponseEntity.ok(ApiResponse.success("Invitación encontrada.",
+                invitationService.findByToken(token)));
     }
 
     @PostMapping("/api/invitations/accept/{token}")

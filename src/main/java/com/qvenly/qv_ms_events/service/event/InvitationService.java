@@ -1,5 +1,6 @@
 package com.qvenly.qv_ms_events.service.event;
 
+import com.qvenly.qv_ms_events.client.event.AuthInternalClient;
 import com.qvenly.qv_ms_events.client.event.NotificationClient;
 import com.qvenly.qv_ms_events.exception.BusinessException;
 import com.qvenly.qv_ms_events.model.dto.request.event.CancelInvitationRequest;
@@ -24,12 +25,12 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import java.util.HashSet;
+import java.util.Set;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -42,10 +43,11 @@ public class InvitationService {
     private final EventMemberService memberService;
     private final AuditService auditService;
     private final NotificationClient notificationClient;
+    private final AuthInternalClient authInternalClient;
 
     @Transactional
     public InvitationResponse sendInvitation(Long eventId, SendInvitationRequest req,
-                                              String performerEmail, String systemRole) {
+                                             String performerEmail, String systemRole) {
         Event event = eventService.findEventById(eventId);
         assertEventAcceptsInvitations(event);
         eventService.assertIsOrganizer(eventId, performerEmail, systemRole);
@@ -54,54 +56,65 @@ public class InvitationService {
             throw new BusinessException("No puedes invitarte a ti mismo.", HttpStatus.BAD_REQUEST);
         }
         if (invitationRepository.existsByEventIdAndInvitedEmailAndEventRoleAndStatus(
-                eventId, req.getInvitedEmail(), req.getEventRole(), InvitationStatus.PENDING)) {
+                eventId, req.getInvitedEmail(), EventRole.MEMBER, InvitationStatus.PENDING)) {
             throw new BusinessException(
-                    String.format("Ya existe una invitación pendiente para %s como %s.",
-                            req.getInvitedEmail(), req.getEventRole()), HttpStatus.CONFLICT);
+                    String.format("Ya existe una invitación pendiente para %s.", req.getInvitedEmail()),
+                    HttpStatus.CONFLICT);
         }
         if (memberRepository.findByEventIdAndUserEmailAndEventRole(
-                eventId, req.getInvitedEmail(), req.getEventRole()).isPresent()) {
-            throw new BusinessException("El usuario ya es miembro con el rol " + req.getEventRole(), HttpStatus.CONFLICT);
+                eventId, req.getInvitedEmail(), EventRole.MEMBER).isPresent()) {
+            throw new BusinessException("El usuario ya es miembro de este evento.", HttpStatus.CONFLICT);
         }
-        memberService.validateRoleLimit(eventId, req.getEventRole());
+        memberService.validateRoleLimit(eventId, EventRole.MEMBER);
 
         Invitation inv = new Invitation();
         inv.setEventId(eventId);
         inv.setInvitedByEmail(performerEmail);
         inv.setInvitedEmail(req.getInvitedEmail());
-        inv.setEventRole(req.getEventRole());
+        inv.setEventRole(EventRole.MEMBER);
         inv.setToken(UUID.randomUUID().toString());
         inv.setStatus(InvitationStatus.PENDING);
+        inv.setExpiresAt(req.getExpiresAt() != null ? req.getExpiresAt() : LocalDateTime.now().plusDays(7));
         Invitation saved = invitationRepository.save(inv);
 
         auditService.log(eventId, AuditActionType.INVITATION_SENT, performerEmail,
                 eventService.resolveRole(eventId, performerEmail, systemRole),
-                String.format("Invitación enviada a %s para rol %s.", req.getInvitedEmail(), req.getEventRole()));
+                String.format("Invitación enviada a %s.", req.getInvitedEmail()));
 
-        // Notificar al invitado por correo + notificación interna si está registrado
+        Map<String, Object> registeredUser = authInternalClient.findUserByEmail(saved.getInvitedEmail());
+        Long invitedUserId = registeredUser != null && registeredUser.get("userId") != null
+                ? Long.valueOf(registeredUser.get("userId").toString()) : null;
+        String invitedName = registeredUser != null ? (String) registeredUser.get("name") : null;
+
         notificationClient.sendInvitationNotification(
                 saved.getInvitedEmail(),
-                null,                          // nombre: null hasta integrar con auth
-                null,                          // userId: null si no está registrado
+                invitedName,
+                invitedUserId,
                 event.getTitle(),
                 eventId,
                 saved.getEventRole().name(),
                 saved.getToken(),
-                saved.getExpiresAt() != null ? saved.getExpiresAt().toString() : null
+                saved.getExpiresAt() != null ? saved.getExpiresAt().toString() : null,
+                event.getDescription(),
+                event.getLocation(),
+                event.getEventType(),
+                event.getStartDatetime().toString(),
+                event.getEndDatetime().toString()
         );
 
         return toResponse(saved);
     }
 
     @Transactional
-    public BulkResult sendBulkFromExcel(Long eventId, MultipartFile file, EventRole defaultRole,
-                                         String performerEmail, String systemRole) {
+    public BulkResult sendBulkFromExcel(Long eventId, MultipartFile file, LocalDateTime expiresAt,
+                                        String performerEmail, String systemRole) {
         Event event = eventService.findEventById(eventId);
         assertEventAcceptsInvitations(event);
         eventService.assertIsOrganizer(eventId, performerEmail, systemRole);
 
         List<InvitationResponse> sent   = new ArrayList<>();
         List<BulkResult.Failed>  failed = new ArrayList<>();
+        Set<String> seenInFile = new HashSet<>();
 
         try (Workbook wb = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = wb.getSheetAt(0);
@@ -109,18 +122,17 @@ public class InvitationService {
                 if (row.getRowNum() == 0) continue;
                 String email = cell(row, 0);
                 if (email == null || email.isBlank()) continue;
-                String roleStr = cell(row, 1);
-                EventRole role = defaultRole;
-                if (roleStr != null && !roleStr.isBlank()) {
-                    try { role = EventRole.valueOf(roleStr.trim().toUpperCase()); }
-                    catch (IllegalArgumentException ex) {
-                        failed.add(new BulkResult.Failed(email, "Rol inválido: " + roleStr)); continue;
-                    }
+                String normalizedEmail = email.trim().toLowerCase();
+
+                if (!seenInFile.add(normalizedEmail)) {
+                    failed.add(new BulkResult.Failed(email, "Correo repetido en el archivo."));
+                    continue;
                 }
+
                 try {
                     SendInvitationRequest req = new SendInvitationRequest();
-                    req.setInvitedEmail(email.trim().toLowerCase());
-                    req.setEventRole(role);
+                    req.setInvitedEmail(normalizedEmail);
+                    req.setExpiresAt(expiresAt);
                     sent.add(sendInvitation(eventId, req, performerEmail, systemRole));
                 } catch (BusinessException e) {
                     failed.add(new BulkResult.Failed(email, e.getMessage()));
@@ -134,8 +146,8 @@ public class InvitationService {
 
     @Transactional
     public InvitationResponse cancelInvitation(Long eventId, Long invitationId,
-                                                CancelInvitationRequest req,
-                                                String performerEmail, String systemRole) {
+                                               CancelInvitationRequest req,
+                                               String performerEmail, String systemRole) {
         eventService.assertIsOrganizer(eventId, performerEmail, systemRole);
         Invitation inv = findById(invitationId);
         if (!inv.getEventId().equals(eventId)) {
@@ -148,10 +160,32 @@ public class InvitationService {
         inv.setCancelReason(req.getCancelReason());
         inv.setRespondedAt(LocalDateTime.now());
         Invitation updated = invitationRepository.save(inv);
+
+        Event event = eventService.findEventById(eventId);
         auditService.log(eventId, AuditActionType.INVITATION_CANCELLED, performerEmail,
                 eventService.resolveRole(eventId, performerEmail, systemRole),
                 String.format("Invitación a %s cancelada. Motivo: %s", inv.getInvitedEmail(), req.getCancelReason()));
+
+        Map<String, Object> registeredUser = authInternalClient.findUserByEmail(inv.getInvitedEmail());
+        Long invitedUserId = registeredUser != null && registeredUser.get("userId") != null
+                ? Long.valueOf(registeredUser.get("userId").toString()) : null;
+        String invitedName = registeredUser != null ? (String) registeredUser.get("name") : null;
+
+        notificationClient.sendEventNotification(
+                "invitation-cancelled",
+                event.getTitle(),
+                eventId,
+                List.of(new NotificationClient.Recipient(invitedUserId, inv.getInvitedEmail(), invitedName)),
+                req.getCancelReason()
+        );
+
         return toResponse(updated);
+    }
+
+    public InvitationResponse findByToken(String token) {
+        Invitation inv = invitationRepository.findByToken(token)
+                .orElseThrow(() -> new BusinessException("Enlace inválido o no encontrado.", HttpStatus.NOT_FOUND));
+        return toResponse(inv);
     }
 
     @Transactional
@@ -222,6 +256,15 @@ public class InvitationService {
         r.setCancelReason(i.getCancelReason()); r.setSentAt(i.getSentAt());
         r.setToken(i.getToken());
         r.setExpiresAt(i.getExpiresAt()); r.setRespondedAt(i.getRespondedAt());
+
+        Event event = eventService.findEventById(i.getEventId());
+        r.setEventTitle(event.getTitle());
+        r.setEventDescription(event.getDescription());
+        r.setEventLocation(event.getLocation());
+        r.setEventType(event.getEventType());
+        r.setEventStartDatetime(event.getStartDatetime());
+        r.setEventEndDatetime(event.getEndDatetime());
+
         return r;
     }
 

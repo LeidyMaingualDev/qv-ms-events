@@ -130,6 +130,8 @@ public class EventMemberService {
     public LimitsUsageResponse getLimitsUsage(Long eventId) {
         EventPlanSnapshot snap = snapshotRepository.findByEventId(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("No hay snapshot de plan para el evento: " + eventId));
+        int maxMembers = snap.getMaxParticipants() + snap.getMaxJudges()
+                + snap.getMaxAttendees() + snap.getMaxStaff();
         LimitsUsageResponse r = new LimitsUsageResponse();
         r.setPlanName(snap.getPlanName());
         r.setOrganizers(new LimitsUsageResponse.RoleUsage(
@@ -142,6 +144,8 @@ public class EventMemberService {
                 (int) memberRepository.countActiveByEventAndRole(eventId, EventRole.ATTENDEE), snap.getMaxAttendees()));
         r.setStaff(new LimitsUsageResponse.RoleUsage(
                 (int) memberRepository.countActiveByEventAndRole(eventId, EventRole.STAFF), snap.getMaxStaff()));
+        r.setMembers(new LimitsUsageResponse.RoleUsage(
+                (int) memberRepository.countActiveByEventAndRole(eventId, EventRole.MEMBER), maxMembers));
         return r;
     }
 
@@ -155,6 +159,8 @@ public class EventMemberService {
             case JUDGE       -> snap.getMaxJudges();
             case ATTENDEE    -> snap.getMaxAttendees();
             case STAFF       -> snap.getMaxStaff();
+            case MEMBER      -> snap.getMaxParticipants() + snap.getMaxJudges()
+                    + snap.getMaxAttendees() + snap.getMaxStaff();
         };
         if (current >= max) {
             throw new BusinessException(
