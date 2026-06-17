@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
@@ -19,4 +20,26 @@ public interface EventRepository extends JpaRepository<Event, Long> {
            "(SELECT m.eventId FROM EventMember m " +
            " WHERE m.userEmail = :email AND m.status = 'ACTIVE')")
     List<Event> findEventsByMemberEmail(@Param("email") String email);
+
+
+    /**
+     * Eventos por organizador con filtro de fechas
+     * 
+     * @param startDate
+     * @param endDate
+     * @return eventos por organizador
+     */
+       @Query("""
+              SELECT e.ownerUserId, e.ownerEmail, COUNT(e)
+              FROM Event e
+              WHERE e.status <> 'CANCELLED'
+              AND (:startDate IS NULL OR e.startDatetime >= :startDate)
+              AND (:endDate   IS NULL OR e.startDatetime <= :endDate)
+              GROUP BY e.ownerUserId, e.ownerEmail
+              """)
+
+       List<Object[]> countEventsByOrganizer(
+       @Param("startDate") LocalDateTime startDate,
+       @Param("endDate")   LocalDateTime endDate
+       );
 }
