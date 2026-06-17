@@ -33,18 +33,25 @@ public class NotificationClient {
     public void sendInvitationNotification(String invitedEmail, String invitedName,
                                            Long invitedUserId, String eventTitle,
                                            Long eventId, String eventRole,
-                                           String token, String expiresAt) {
+                                           String token, String expiresAt,
+                                           String eventDescription, String eventLocation,
+                                           String eventType, String startDatetime,
+                                           String endDatetime) {
         try {
-            Map<String, Object> body = Map.of(
-                    "invitedEmail",    invitedEmail,
-                    "invitedName",     invitedName    != null ? invitedName    : "",
-                    "invitedUserId",   invitedUserId  != null ? invitedUserId  : 0,
-                    "eventTitle",      eventTitle,
-                    "eventId",         eventId,
-                    "eventRole",       eventRole,
-                    "invitationToken", token,
-                    "expiresAt",       expiresAt      != null ? expiresAt      : ""
-            );
+            Map<String, Object> body = new HashMap<>();
+            body.put("invitedEmail",      invitedEmail);
+            body.put("invitedName",       invitedName    != null ? invitedName    : "");
+            body.put("invitedUserId",     invitedUserId  != null ? invitedUserId  : 0);
+            body.put("eventTitle",        eventTitle);
+            body.put("eventId",           eventId);
+            body.put("eventRole",         eventRole);
+            body.put("invitationToken",   token);
+            body.put("expiresAt",         expiresAt      != null ? expiresAt      : "");
+            body.put("eventDescription",  eventDescription != null ? eventDescription : "");
+            body.put("eventLocation",     eventLocation    != null ? eventLocation    : "");
+            body.put("eventType",         eventType        != null ? eventType        : "");
+            body.put("startDatetime",     startDatetime    != null ? startDatetime    : "");
+            body.put("endDatetime",       endDatetime      != null ? endDatetime      : "");
             post("/api/notifications/invitation-sent", body);
         } catch (Exception e) {
             log.warn("Error al enviar notificación de invitación: {}", e.getMessage());

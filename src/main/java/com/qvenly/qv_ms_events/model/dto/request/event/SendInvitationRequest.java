@@ -1,10 +1,10 @@
 package com.qvenly.qv_ms_events.model.dto.request.event;
 
-import com.qvenly.qv_ms_events.model.enums.event.EventRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Data
 public class SendInvitationRequest {
@@ -13,6 +13,6 @@ public class SendInvitationRequest {
     @Email(message = "El email no tiene formato válido")
     private String invitedEmail;
 
-    @NotNull(message = "El rol del invitado es obligatorio")
-    private EventRole eventRole;
+    /** Fecha límite de aceptación. Si es null, se usa un valor por defecto (7 días). */
+    private LocalDateTime expiresAt;
 }

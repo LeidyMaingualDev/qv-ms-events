@@ -18,4 +18,12 @@ public class InvitationResponse {
     private LocalDateTime sentAt;
     private LocalDateTime expiresAt;
     private LocalDateTime respondedAt;
+
+    // Datos del evento — para mostrar detalle en la tarjeta de invitación
+    private String eventTitle;
+    private String eventDescription;
+    private String eventLocation;
+    private String eventType;
+    private LocalDateTime eventStartDatetime;
+    private LocalDateTime eventEndDatetime;
 }

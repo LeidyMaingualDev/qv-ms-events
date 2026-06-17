@@ -5,5 +5,6 @@ public enum EventRole {
     STAFF,
     JUDGE,
     PARTICIPANT,
-    ATTENDEE
+    ATTENDEE,
+    MEMBER
 }

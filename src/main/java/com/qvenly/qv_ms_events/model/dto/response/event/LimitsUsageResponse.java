@@ -11,6 +11,7 @@ public class LimitsUsageResponse {
     private RoleUsage judges;
     private RoleUsage attendees;
     private RoleUsage staff;
+    private RoleUsage members;
 
     @Data
     public static class RoleUsage {
