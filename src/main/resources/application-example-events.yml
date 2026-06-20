@@ -46,5 +46,5 @@ services:
     url: http://localhost:8082        # qv-ms-plans
   notifications:
     url: http://localhost:8089        # qv-ms-notifications
-  auth: # ← AGREGAR
-    url: http://localhost:8080
+  auth:
+    url: http://localhost:8080        # qv-ms-auth
