@@ -43,4 +43,19 @@ public interface EventMemberRepository extends JpaRepository<EventMember, Long> 
         GROUP BY m.eventId
         """)
     List<Object[]> countMembersByEventAndRole();
+
+
+    /**
+     * Total de usuarios diferenciados por rol
+     */
+    @Query("""
+        SELECT 
+            COUNT(CASE WHEN m.eventRole = 'STAFF'       THEN 1 END),
+            COUNT(CASE WHEN m.eventRole = 'ATTENDEE'    THEN 1 END),
+            COUNT(CASE WHEN m.eventRole = 'JUDGE'       THEN 1 END),
+            COUNT(CASE WHEN m.eventRole = 'PARTICIPANT' THEN 1 END)
+        FROM EventMember m
+        WHERE m.status = 'ACTIVE'
+        """)
+    List<Object[]> countGlobalByRole();
 }

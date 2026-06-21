@@ -42,4 +42,8 @@ public interface EventRepository extends JpaRepository<Event, Long> {
        @Param("startDate") LocalDateTime startDate,
        @Param("endDate")   LocalDateTime endDate
        );
+
+
+       @Query("SELECT COUNT(DISTINCT e.ownerUserId) FROM Event e WHERE e.status <> 'CANCELLED'")
+       Long countUniqueOrganizers();
 }
