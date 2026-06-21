@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.qvenly.qv_ms_events.model.dto.response.dashboardAdmin.EventByOrganizerResponseDTO;
 import com.qvenly.qv_ms_events.model.dto.response.dashboardAdmin.EventUserDetailResponseDTO;
+import com.qvenly.qv_ms_events.model.dto.response.dashboardAdmin.GlobalRoleStatsDTO;
 import com.qvenly.qv_ms_events.repository.event.EventMemberRepository;
 import com.qvenly.qv_ms_events.repository.event.EventRepository;
 
@@ -65,6 +66,21 @@ public class EventStatsService {
             );
         })
         .toList();
-}
+    }
+
+
+    public GlobalRoleStatsDTO getGlobalRoleStats() {
+        List<Object[]> rows = memberRepository.countGlobalByRole();
+        Object[] result = rows.get(0);  // ← primer (y único) row
+        Long organizers = eventRepository.countUniqueOrganizers();
+        
+        return new GlobalRoleStatsDTO(
+            organizers,
+            ((Number) result[0]).longValue(),
+            ((Number) result[1]).longValue(),
+            ((Number) result[2]).longValue(),
+            ((Number) result[3]).longValue()
+        );
+    }
 
 }

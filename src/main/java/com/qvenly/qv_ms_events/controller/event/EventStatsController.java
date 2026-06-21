@@ -2,6 +2,7 @@ package com.qvenly.qv_ms_events.controller.event;
 
 import com.qvenly.qv_ms_events.model.dto.response.dashboardAdmin.EventByOrganizerResponseDTO;
 import com.qvenly.qv_ms_events.model.dto.response.dashboardAdmin.EventUserDetailResponseDTO;
+import com.qvenly.qv_ms_events.model.dto.response.dashboardAdmin.GlobalRoleStatsDTO;
 import com.qvenly.qv_ms_events.service.event.EventStatsService;
 
 import lombok.RequiredArgsConstructor;
@@ -36,5 +37,10 @@ public class EventStatsController {
     @GetMapping("/users-by-role")
     public ResponseEntity<List<EventUserDetailResponseDTO>> getUsersByEvent() {
         return ResponseEntity.ok(eventStatsService.getUsersByEvent());
+    }
+
+    @GetMapping("/global-roles")
+    public ResponseEntity<GlobalRoleStatsDTO> getGlobalRoleStats() {
+        return ResponseEntity.ok(eventStatsService.getGlobalRoleStats());
     }
 }
