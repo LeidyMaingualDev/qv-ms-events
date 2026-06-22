@@ -10,6 +10,8 @@ import java.util.Optional;
 
 public interface InvitationRepository extends JpaRepository<Invitation, Long> {
 
+    List<Invitation> findByInvitedEmailOrderBySentAtDesc(String invitedEmail);
+
     List<Invitation> findByEventIdOrderBySentAtDesc(Long eventId);
 
     Optional<Invitation> findByToken(String token);
