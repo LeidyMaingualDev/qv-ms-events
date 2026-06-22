@@ -87,8 +87,11 @@ public class InvitationController {
 
     @GetMapping("/api/invitations/my")
     public ResponseEntity<ApiResponse<List<InvitationResponse>>> getMyInvitations(
+            @RequestParam(required = false) InvitationStatus status,
             @RequestHeader("X-User-Email") String userEmail) {
-        return ResponseEntity.ok(ApiResponse.success("Invitaciones pendientes.",
-                invitationService.getMyPendingInvitations(userEmail)));
+        List<InvitationResponse> invitations = (status != null)
+                ? invitationService.getMyInvitationsByStatus(userEmail, status)
+                : invitationService.getAllMyInvitations(userEmail);
+        return ResponseEntity.ok(ApiResponse.success("Invitaciones obtenidas.", invitations));
     }
 }

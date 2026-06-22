@@ -220,8 +220,13 @@ public class InvitationService {
         return invitationRepository.findByEventIdAndStatus(eventId, status).stream().map(this::toResponse).toList();
     }
 
-    public List<InvitationResponse> getMyPendingInvitations(String userEmail) {
-        return invitationRepository.findByInvitedEmailAndStatus(userEmail, InvitationStatus.PENDING)
+    public List<InvitationResponse> getAllMyInvitations(String userEmail) {
+        return invitationRepository.findByInvitedEmailOrderBySentAtDesc(userEmail)
+                .stream().map(this::toResponse).toList();
+    }
+
+    public List<InvitationResponse> getMyInvitationsByStatus(String userEmail, InvitationStatus status) {
+        return invitationRepository.findByInvitedEmailAndStatus(userEmail, status)
                 .stream().map(this::toResponse).toList();
     }
 
