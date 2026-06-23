@@ -263,4 +263,9 @@ public class EventService {
         }
         return r;
     }
+
+    public EventResponse getEventByIdInternal(Long id) {
+        Event event = findEventById(id);
+        return toResponse(event, null);
+    }
 }
