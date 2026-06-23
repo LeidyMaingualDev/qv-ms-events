@@ -49,5 +49,12 @@ services:
   auth:
     url: http://localhost:8080        # qv-ms-auth
 
+# Clave de API interna para comunicación service-to-service
 internal:
-  api-key:
+  api-key: API-KEY-SECRET
+
+# Configuración Supabase para almacenamiento de imágenes
+supabase:
+  url: URL-SUPABASE
+  service-key: YOUR-SECRET-KEY
+  bucket: NAME
