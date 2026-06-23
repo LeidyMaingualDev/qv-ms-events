@@ -48,3 +48,8 @@ services:
     url: http://localhost:8089        # qv-ms-notifications
   auth:
     url: http://localhost:8080        # qv-ms-auth
+
+supabase:
+  url: YOUR_SUPABASE_URL
+  service-key: YOUR_SUPABASE_SERVICE_KEY
+  bucket: qvenly-images

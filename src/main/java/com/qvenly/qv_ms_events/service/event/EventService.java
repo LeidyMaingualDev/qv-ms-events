@@ -18,6 +18,7 @@ import com.qvenly.qv_ms_events.model.enums.event.MemberStatus;
 import com.qvenly.qv_ms_events.repository.event.EventMemberRepository;
 import com.qvenly.qv_ms_events.repository.event.EventPlanSnapshotRepository;
 import com.qvenly.qv_ms_events.repository.event.EventRepository;
+import com.qvenly.qv_ms_events.repository.event.EventImageRepository;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class EventService {
     private final PlanServiceClient           planClient;
     private final AuditService auditService;
     private final NotificationClient notificationClient;
+    private final EventImageRepository imageRepository;
 
     @Transactional
     public EventResponse createEvent(CreateEventRequest req, Long ownerUserId, String ownerEmail) {
@@ -260,6 +262,10 @@ public class EventService {
             lim.setMaxJudges(snap.getMaxJudges()); lim.setMaxAttendees(snap.getMaxAttendees());
             lim.setMaxStaff(snap.getMaxStaff());
             r.setPlanLimits(lim);
+        }
+        var cover = imageRepository.findByEventIdAndIsCoverTrue(e.getId());
+        if (cover != null) {
+            r.setCoverImageUrl(cover.getImageUrl());
         }
         return r;
     }

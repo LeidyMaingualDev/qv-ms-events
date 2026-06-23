@@ -5,6 +5,8 @@ import com.qvenly.qv_ms_events.model.dto.request.event.CreateEventRequest;
 import com.qvenly.qv_ms_events.model.dto.request.event.UpdateEventRequest;
 import com.qvenly.qv_ms_events.model.dto.response.event.ApiResponse;
 import com.qvenly.qv_ms_events.model.dto.response.event.AuditLogResponse;
+import com.qvenly.qv_ms_events.model.dto.response.event.EventImageResponse;
+import com.qvenly.qv_ms_events.service.event.EventImageService;
 import com.qvenly.qv_ms_events.model.dto.response.event.EventResponse;
 import com.qvenly.qv_ms_events.service.event.AuditService;
 import com.qvenly.qv_ms_events.service.event.EventService;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -23,6 +26,7 @@ public class EventController {
 
     private final EventService eventService;
     private final AuditService auditService;
+    private final EventImageService eventImageService;
 
     @PostMapping
     public ResponseEntity<ApiResponse<EventResponse>> createEvent(
@@ -110,5 +114,43 @@ public class EventController {
             @RequestHeader("X-Rol")        String role) {
         eventService.assertIsOrganizer(id, userEmail, role);
         return ResponseEntity.ok(ApiResponse.success("Auditoría obtenida.", auditService.getAuditLog(id)));
+    }
+
+    @PostMapping("/{id}/images")
+    public ResponseEntity<ApiResponse<EventImageResponse>> uploadImage(
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file,
+            @RequestHeader("X-User-Email") String userEmail,
+            @RequestHeader("X-Rol")        String role) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Imagen subida exitosamente.",
+                        eventImageService.uploadImage(id, file, userEmail, role)));
+    }
+
+    @GetMapping("/{id}/images")
+    public ResponseEntity<ApiResponse<List<EventImageResponse>>> getImages(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Imágenes obtenidas.",
+                eventImageService.getImagesByEvent(id)));
+    }
+
+    @DeleteMapping("/{id}/images/{imageId}")
+    public ResponseEntity<ApiResponse<Void>> deleteImage(
+            @PathVariable Long id,
+            @PathVariable Long imageId,
+            @RequestHeader("X-User-Email") String userEmail,
+            @RequestHeader("X-Rol")        String role) {
+        eventImageService.deleteImage(id, imageId, userEmail, role);
+        return ResponseEntity.ok(ApiResponse.success("Imagen eliminada.", null));
+    }
+
+    @PatchMapping("/{id}/images/{imageId}/cover")
+    public ResponseEntity<ApiResponse<EventImageResponse>> setCoverImage(
+            @PathVariable Long id,
+            @PathVariable Long imageId,
+            @RequestHeader("X-User-Email") String userEmail,
+            @RequestHeader("X-Rol")        String role) {
+        return ResponseEntity.ok(ApiResponse.success("Portada actualizada.",
+                eventImageService.setCoverImage(id, imageId, userEmail, role)));
     }
 }

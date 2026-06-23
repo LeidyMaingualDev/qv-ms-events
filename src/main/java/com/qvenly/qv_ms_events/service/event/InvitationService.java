@@ -12,6 +12,7 @@ import com.qvenly.qv_ms_events.model.enums.event.AuditActionType;
 import com.qvenly.qv_ms_events.model.enums.event.EventRole;
 import com.qvenly.qv_ms_events.model.enums.event.EventStatus;
 import com.qvenly.qv_ms_events.model.enums.event.InvitationStatus;
+import com.qvenly.qv_ms_events.repository.event.EventImageRepository;
 import com.qvenly.qv_ms_events.repository.event.EventMemberRepository;
 import com.qvenly.qv_ms_events.repository.event.InvitationRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -39,6 +40,7 @@ public class InvitationService {
 
     private final InvitationRepository  invitationRepository;
     private final EventMemberRepository memberRepository;
+    private final EventImageRepository imageRepository;
     private final EventService eventService;
     private final EventMemberService memberService;
     private final AuditService auditService;
@@ -269,6 +271,11 @@ public class InvitationService {
         r.setEventType(event.getEventType());
         r.setEventStartDatetime(event.getStartDatetime());
         r.setEventEndDatetime(event.getEndDatetime());
+
+        var cover = imageRepository.findByEventIdAndIsCoverTrue(i.getEventId());
+        if (cover != null) {
+            r.setEventCoverImageUrl(cover.getImageUrl());
+        }
 
         return r;
     }
