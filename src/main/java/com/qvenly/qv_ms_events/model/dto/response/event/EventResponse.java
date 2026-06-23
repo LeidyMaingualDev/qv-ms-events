@@ -11,6 +11,7 @@ public class EventResponse {
     private String title;
     private String description;
     private String location;
+    private String coverImageUrl;
     private String eventType;
     private LocalDateTime startDatetime;
     private LocalDateTime endDatetime;

@@ -26,4 +26,5 @@ public class InvitationResponse {
     private String eventType;
     private LocalDateTime eventStartDatetime;
     private LocalDateTime eventEndDatetime;
+    private String eventCoverImageUrl;
 }
