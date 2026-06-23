@@ -30,14 +30,8 @@ public class EventPlanSnapshot {
     @Column(name = "max_organizers", nullable = false)
     private Integer maxOrganizers = 0;
 
-    @Column(name = "max_participants", nullable = false)
-    private Integer maxParticipants = 0;
-
-    @Column(name = "max_judges", nullable = false)
-    private Integer maxJudges = 0;
-
-    @Column(name = "max_attendees", nullable = false)
-    private Integer maxAttendees = 0;
+    @Column(name = "max_guests", nullable = false)
+    private Integer maxGuests = 0;
 
     @Column(name = "max_staff", nullable = false)
     private Integer maxStaff = 0;

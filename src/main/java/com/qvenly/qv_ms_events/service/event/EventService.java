@@ -242,8 +242,7 @@ public class EventService {
         EventPlanSnapshot s = new EventPlanSnapshot();
         s.setEventId(eventId); s.setPlanId(p.getIdPlan()); s.setPlanName(p.getName());
         s.setMaxEvents(p.getMaxEvents()); s.setMaxOrganizers(p.getMaxOrganizers());
-        s.setMaxParticipants(p.getMaxParticipants()); s.setMaxJudges(p.getMaxJudges());
-        s.setMaxAttendees(p.getMaxAttendees()); s.setMaxStaff(p.getMaxStaff());
+        s.setMaxGuests(p.getMaxGuests()); s.setMaxStaff(p.getMaxStaff());
         return s;
     }
 
@@ -258,8 +257,7 @@ public class EventService {
         if (snap != null) {
             EventResponse.PlanLimitsResponse lim = new EventResponse.PlanLimitsResponse();
             lim.setPlanName(snap.getPlanName()); lim.setMaxEvents(snap.getMaxEvents());
-            lim.setMaxOrganizers(snap.getMaxOrganizers()); lim.setMaxParticipants(snap.getMaxParticipants());
-            lim.setMaxJudges(snap.getMaxJudges()); lim.setMaxAttendees(snap.getMaxAttendees());
+            lim.setMaxOrganizers(snap.getMaxOrganizers()); lim.setMaxGuests(snap.getMaxGuests());
             lim.setMaxStaff(snap.getMaxStaff());
             r.setPlanLimits(lim);
         }

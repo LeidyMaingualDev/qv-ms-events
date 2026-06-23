@@ -28,9 +28,7 @@ public class UserPlanResponseDTO {
         private String name;
         private Integer maxEvents;
         private Integer maxOrganizers;
-        private Integer maxParticipants;
-        private Integer maxJudges;
-        private Integer maxAttendees;
+        private Integer maxGuests;
         private Integer maxStaff;
     }
 }
