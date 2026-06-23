@@ -130,22 +130,14 @@ public class EventMemberService {
     public LimitsUsageResponse getLimitsUsage(Long eventId) {
         EventPlanSnapshot snap = snapshotRepository.findByEventId(eventId)
                 .orElseThrow(() -> new EntityNotFoundException("No hay snapshot de plan para el evento: " + eventId));
-        int maxMembers = snap.getMaxParticipants() + snap.getMaxJudges()
-                + snap.getMaxAttendees() + snap.getMaxStaff();
         LimitsUsageResponse r = new LimitsUsageResponse();
         r.setPlanName(snap.getPlanName());
         r.setOrganizers(new LimitsUsageResponse.RoleUsage(
                 (int) memberRepository.countActiveByEventAndRole(eventId, EventRole.ORGANIZER), snap.getMaxOrganizers()));
-        r.setParticipants(new LimitsUsageResponse.RoleUsage(
-                (int) memberRepository.countActiveByEventAndRole(eventId, EventRole.PARTICIPANT), snap.getMaxParticipants()));
-        r.setJudges(new LimitsUsageResponse.RoleUsage(
-                (int) memberRepository.countActiveByEventAndRole(eventId, EventRole.JUDGE), snap.getMaxJudges()));
-        r.setAttendees(new LimitsUsageResponse.RoleUsage(
-                (int) memberRepository.countActiveByEventAndRole(eventId, EventRole.ATTENDEE), snap.getMaxAttendees()));
         r.setStaff(new LimitsUsageResponse.RoleUsage(
                 (int) memberRepository.countActiveByEventAndRole(eventId, EventRole.STAFF), snap.getMaxStaff()));
         r.setMembers(new LimitsUsageResponse.RoleUsage(
-                (int) memberRepository.countActiveByEventAndRole(eventId, EventRole.MEMBER), maxMembers));
+                (int) memberRepository.countActiveByEventAndRole(eventId, EventRole.MEMBER), snap.getMaxGuests()));
         return r;
     }
 
@@ -154,13 +146,11 @@ public class EventMemberService {
                 .orElseThrow(() -> new EntityNotFoundException("No hay snapshot de plan para el evento: " + eventId));
         long current = memberRepository.countActiveByEventAndRole(eventId, role);
         int max = switch (role) {
-            case ORGANIZER   -> snap.getMaxOrganizers();
-            case PARTICIPANT -> snap.getMaxParticipants();
-            case JUDGE       -> snap.getMaxJudges();
-            case ATTENDEE    -> snap.getMaxAttendees();
-            case STAFF       -> snap.getMaxStaff();
-            case MEMBER      -> snap.getMaxParticipants() + snap.getMaxJudges()
-                    + snap.getMaxAttendees() + snap.getMaxStaff();
+            case ORGANIZER -> snap.getMaxOrganizers();
+            case STAFF      -> snap.getMaxStaff();
+            case MEMBER     -> snap.getMaxGuests();
+            default -> throw new BusinessException(
+                    "El rol " + role + " ya no se asigna directamente al evento.", HttpStatus.BAD_REQUEST);
         };
         if (current >= max) {
             throw new BusinessException(

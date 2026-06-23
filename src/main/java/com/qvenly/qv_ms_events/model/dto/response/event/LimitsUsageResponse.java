@@ -7,9 +7,6 @@ public class LimitsUsageResponse {
 
     private String planName;
     private RoleUsage organizers;
-    private RoleUsage participants;
-    private RoleUsage judges;
-    private RoleUsage attendees;
     private RoleUsage staff;
     private RoleUsage members;
 
