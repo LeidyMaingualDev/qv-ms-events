@@ -237,6 +237,16 @@ public class EventService {
                 .map(m -> m.getEventRole().name()).orElse("ORGANIZER");
     }
 
+    /**
+     * Devuelve el rol de evento (ORGANIZER/STAFF/MEMBER) de una persona en un evento,
+     * o null si no es miembro activo. Uso interno entre microservicios.
+     */
+    public String getActiveMemberRole(Long eventId, String userEmail) {
+        return memberRepository.findByEventIdAndUserEmailAndStatus(eventId, userEmail, MemberStatus.ACTIVE)
+                .map(m -> m.getEventRole().name())
+                .orElse(null);
+    }
+
     private EventPlanSnapshot buildSnapshot(Long eventId, UserPlanResponseDTO up) {
         UserPlanResponseDTO.PlanDTO p = up.getPlan();
         EventPlanSnapshot s = new EventPlanSnapshot();
