@@ -8,11 +8,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EventUserDetailResponseDTO {
-    
+
     private Long eventId;
     private String eventName;
     private Long staff;
-    private Long assistants;
-    private Long judges;
-    private Long participants;
+    private Long guests;
 }

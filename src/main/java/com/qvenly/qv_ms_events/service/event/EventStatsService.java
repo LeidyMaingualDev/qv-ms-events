@@ -47,39 +47,33 @@ public class EventStatsService {
 
     // RF20.2 — usuarios por evento por rol
     public List<EventUserDetailResponseDTO> getUsersByEvent() {
-    return memberRepository.countMembersByEventAndRole()
-        .stream()
-        .map(row -> {
-            Long eventId = (Long) row[0];
-            // busca el nombre del evento
-            String eventName = eventRepository.findById(eventId)
-                .map(e -> e.getTitle())
-                .orElse("Evento " + eventId);
+        return memberRepository.countMembersByEventAndRole()
+                .stream()
+                .map(row -> {
+                    Long eventId = (Long) row[0];
+                    String eventName = eventRepository.findById(eventId)
+                            .map(e -> e.getTitle())
+                            .orElse("Evento " + eventId);
 
-            return new EventUserDetailResponseDTO(
-                eventId,
-                eventName,
-                (Long) row[1],
-                (Long) row[2],
-                (Long) row[3],
-                (Long) row[4]
-            );
-        })
-        .toList();
+                    return new EventUserDetailResponseDTO(
+                            eventId,
+                            eventName,
+                            (Long) row[1],
+                            (Long) row[2]
+                    );
+                })
+                .toList();
     }
-
 
     public GlobalRoleStatsDTO getGlobalRoleStats() {
         List<Object[]> rows = memberRepository.countGlobalByRole();
-        Object[] result = rows.get(0);  // ← primer (y único) row
+        Object[] result = rows.get(0);
         Long organizers = eventRepository.countUniqueOrganizers();
-        
+
         return new GlobalRoleStatsDTO(
-            organizers,
-            ((Number) result[0]).longValue(),
-            ((Number) result[1]).longValue(),
-            ((Number) result[2]).longValue(),
-            ((Number) result[3]).longValue()
+                organizers,
+                ((Number) result[0]).longValue(),
+                ((Number) result[1]).longValue()
         );
     }
 
