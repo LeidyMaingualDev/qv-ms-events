@@ -8,10 +8,7 @@ import com.qvenly.qv_ms_events.model.dto.request.event.SendInvitationRequest;
 import com.qvenly.qv_ms_events.model.dto.response.event.InvitationResponse;
 import com.qvenly.qv_ms_events.model.entity.event.Event;
 import com.qvenly.qv_ms_events.model.entity.event.Invitation;
-import com.qvenly.qv_ms_events.model.enums.event.AuditActionType;
-import com.qvenly.qv_ms_events.model.enums.event.EventRole;
-import com.qvenly.qv_ms_events.model.enums.event.EventStatus;
-import com.qvenly.qv_ms_events.model.enums.event.InvitationStatus;
+import com.qvenly.qv_ms_events.model.enums.event.*;
 import com.qvenly.qv_ms_events.repository.event.EventImageRepository;
 import com.qvenly.qv_ms_events.repository.event.EventMemberRepository;
 import com.qvenly.qv_ms_events.repository.event.InvitationRepository;
@@ -54,26 +51,40 @@ public class InvitationService {
         assertEventAcceptsInvitations(event);
         eventService.assertIsOrganizer(eventId, performerEmail, systemRole);
 
+        // Rol con el que se invita. Si no viene, se asume MEMBER (caso por defecto).
+        EventRole chosenRole = (req.getEventRole() != null) ? req.getEventRole() : EventRole.MEMBER;
+
+        // Solo roles de EVENTO. Los sub-roles de actividad (JUDGE/PARTICIPANT/ATTENDEE) no son válidos aquí.
+        if (chosenRole != EventRole.ORGANIZER && chosenRole != EventRole.STAFF && chosenRole != EventRole.MEMBER) {
+            throw new BusinessException(
+                    "Rol de invitación inválido. Solo se permite ORGANIZER, STAFF o MEMBER.",
+                    HttpStatus.BAD_REQUEST);
+        }
+
         if (req.getInvitedEmail().equalsIgnoreCase(performerEmail)) {
             throw new BusinessException("No puedes invitarte a ti mismo.", HttpStatus.BAD_REQUEST);
         }
-        if (invitationRepository.existsByEventIdAndInvitedEmailAndEventRoleAndStatus(
-                eventId, req.getInvitedEmail(), EventRole.MEMBER, InvitationStatus.PENDING)) {
+
+        // Bloquea cualquier invitación pendiente para esa persona, sin importar el rol.
+        if (invitationRepository.existsByEventIdAndInvitedEmailAndStatus(
+                eventId, req.getInvitedEmail(), InvitationStatus.PENDING)) {
             throw new BusinessException(
                     String.format("Ya existe una invitación pendiente para %s.", req.getInvitedEmail()),
                     HttpStatus.CONFLICT);
         }
-        if (memberRepository.findByEventIdAndUserEmailAndEventRole(
-                eventId, req.getInvitedEmail(), EventRole.MEMBER).isPresent()) {
-            throw new BusinessException("El usuario ya es miembro de este evento.", HttpStatus.CONFLICT);
+
+        // Bloquea si ya es miembro activo del evento con cualquier rol (usar "cambiar rol" en su lugar).
+        if (memberRepository.existsByEventIdAndUserEmailAndStatus(
+                eventId, req.getInvitedEmail(), MemberStatus.ACTIVE)) {
+            throw new BusinessException("El usuario ya es miembro activo de este evento.", HttpStatus.CONFLICT);
         }
-        memberService.validateRoleLimit(eventId, EventRole.MEMBER);
+        memberService.validateRoleLimit(eventId, chosenRole);
 
         Invitation inv = new Invitation();
         inv.setEventId(eventId);
         inv.setInvitedByEmail(performerEmail);
         inv.setInvitedEmail(req.getInvitedEmail());
-        inv.setEventRole(EventRole.MEMBER);
+        inv.setEventRole(chosenRole);
         inv.setToken(UUID.randomUUID().toString());
         inv.setStatus(InvitationStatus.PENDING);
         inv.setExpiresAt(req.getExpiresAt() != null ? req.getExpiresAt() : LocalDateTime.now().plusDays(7));
@@ -81,7 +92,7 @@ public class InvitationService {
 
         auditService.log(eventId, AuditActionType.INVITATION_SENT, performerEmail,
                 eventService.resolveRole(eventId, performerEmail, systemRole),
-                String.format("Invitación enviada a %s.", req.getInvitedEmail()));
+                String.format("Invitación enviada a %s con rol %s.", req.getInvitedEmail(), chosenRole.name()));
 
         Map<String, Object> registeredUser = authInternalClient.findUserByEmail(saved.getInvitedEmail());
         Long invitedUserId = registeredUser != null && registeredUser.get("userId") != null

@@ -20,6 +20,8 @@ public interface EventMemberRepository extends JpaRepository<EventMember, Long> 
 
     boolean existsByEventIdAndUserEmailAndStatus(Long eventId, String userEmail, MemberStatus status);
 
+    Optional<EventMember> findByEventIdAndUserEmailAndStatus(Long eventId, String userEmail, MemberStatus status);
+
     boolean existsByEventIdAndUserEmailAndEventRoleAndStatus(
             Long eventId, String userEmail, EventRole role, MemberStatus status);
 
