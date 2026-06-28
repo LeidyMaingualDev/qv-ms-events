@@ -56,4 +56,12 @@ public interface EventMemberRepository extends JpaRepository<EventMember, Long> 
     WHERE m.status = 'ACTIVE'
     """)
     List<Object[]> countGlobalByRole();
+
+
+    @Query("SELECT m FROM EventMember m WHERE m.eventId = :eventId " +
+       "AND m.eventRole IN :roles AND m.status = 'ACTIVE'")
+    List<EventMember> findActiveByEventIdAndRoles(
+            @Param("eventId") Long eventId,
+            @Param("roles") List<EventRole> roles);
+
 }

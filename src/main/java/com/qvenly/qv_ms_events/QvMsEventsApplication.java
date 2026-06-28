@@ -2,6 +2,7 @@ package com.qvenly.qv_ms_events;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Punto de entrada del microservicio qv-ms-events.
@@ -9,6 +10,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  *
  * @author Equipo Qvenly
  */
+
+@EnableScheduling
 @SpringBootApplication
 public class QvMsEventsApplication {
 

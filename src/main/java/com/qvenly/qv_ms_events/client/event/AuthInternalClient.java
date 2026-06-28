@@ -40,4 +40,10 @@ public class AuthInternalClient {
             return null;
         }
     }
+
+    public Long resolveUserId(String email) {
+        Map<String, Object> data = findUserByEmail(email);
+        if (data == null || data.get("userId") == null) return null;
+        return ((Number) data.get("userId")).longValue();
+    }
 }

@@ -98,4 +98,61 @@ public class NotificationClient {
                         err -> log.warn("Notificación fallida [{}]: {}", uri, err.getMessage())
                 );
     }
+
+
+    // ── RF131 — Encuesta publicada ─────────────────────────────
+
+    public void sendSurveyPublishedNotification(String eventTitle, Long eventId,
+                                                Long surveyId, String surveyTitle,
+                                                String deadline, List<Recipient> recipients) {
+        try {
+            List<Map<String, Object>> recipientList = recipients.stream().map(r -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("userId", r.userId() != null ? r.userId() : 0);
+                m.put("email",  r.email());
+                m.put("name",   r.name()   != null ? r.name()   : "");
+                return m;
+            }).toList();
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("eventTitle",   eventTitle);
+            body.put("eventId",      eventId);
+            body.put("surveyId",     surveyId);
+            body.put("surveyTitle",  surveyTitle);
+            body.put("deadline",     deadline != null ? deadline : "");
+            body.put("recipients",   recipientList);
+
+            post("/api/notifications/survey-published", body);
+        } catch (Exception e) {
+            log.warn("Error al enviar notificación de encuesta publicada: {}", e.getMessage());
+        }
+    }
+
+    // ── RF132 — Encuesta cancelada ─────────────────────────────
+
+    public void sendSurveyCancelledNotification(String eventTitle, Long eventId,
+                                                Long surveyId, String surveyTitle,
+                                                String cancelReason, List<Recipient> recipients) {
+        try {
+            List<Map<String, Object>> recipientList = recipients.stream().map(r -> {
+                Map<String, Object> m = new HashMap<>();
+                m.put("userId", r.userId() != null ? r.userId() : 0);
+                m.put("email",  r.email());
+                m.put("name",   r.name()   != null ? r.name()   : "");
+                return m;
+            }).toList();
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("eventTitle",    eventTitle);
+            body.put("eventId",       eventId);
+            body.put("surveyId",      surveyId);
+            body.put("surveyTitle",   surveyTitle);
+            body.put("deadline",      cancelReason != null ? cancelReason : "");  // reutilizamos deadline para el motivo
+            body.put("recipients",    recipientList);
+
+            post("/api/notifications/survey-cancelled", body);
+        } catch (Exception e) {
+            log.warn("Error al enviar notificación de encuesta cancelada: {}", e.getMessage());
+        }
+    }
 }
