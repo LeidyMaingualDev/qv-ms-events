@@ -331,6 +331,52 @@ public SurveyResponseDTO cancelSurvey(Long surveyId, SurveyCancelRequestDTO req,
         return result;
     }
 
+    //Editar encuesta en DRAFT
+    @Transactional
+    public SurveyResponseDTO updateSurvey(Long surveyId, SurveyRequestDTO req, String performerEmail, String systemRole) {
+        Survey survey = findSurveyById(surveyId);
+        eventService.assertIsOrganizer(survey.getEvent().getId(), performerEmail, systemRole);
+
+        if (survey.getStatus() != SurveyStatus.DRAFT) {
+            throw new BusinessException("Solo se puede editar una encuesta en estado DRAFT.", HttpStatus.CONFLICT);
+        }
+
+        survey.setTitle(req.getTitle());
+        survey.setDescription(req.getDescription());
+        survey.setDeadline(req.getDeadline());
+        survey.setAnonymous(req.getAnonymous() != null && req.getAnonymous());
+
+        // Eliminar explícitamente antes de reinsertar
+        survey.getTargetRoles().clear();
+        survey.getQuestions().clear();
+        surveyRepository.saveAndFlush(survey); // flush fuerza el DELETE antes del INSERT
+
+        buildTargetRoles(survey, req.getTargetRoles());
+        buildQuestions(survey, req.getQuestions());
+
+        Survey updated = surveyRepository.save(survey);
+        log.info("Encuesta actualizada: id={}", surveyId);
+        return toResponse(updated);
+    }
+
+    @Transactional
+    public void deleteSurvey(Long surveyId, String performerEmail, String systemRole) {
+        Survey survey = findSurveyById(surveyId);
+        eventService.assertIsOrganizer(survey.getEvent().getId(), performerEmail, systemRole);
+
+        if (survey.getStatus() == SurveyStatus.PUBLISHED) {
+            throw new BusinessException("No se puede eliminar una encuesta publicada. Cancélala primero.", HttpStatus.CONFLICT);
+        }
+
+        // Eliminar respuestas y sus answers primero
+        for (SurveyResponse response : survey.getResponses()) {
+            answerRepository.deleteAll(response.getAnswers());
+        }
+        responseRepository.deleteAll(survey.getResponses());
+
+        surveyRepository.delete(survey);
+        log.info("Encuesta eliminada: id={}", surveyId);
+    }
     // ==================== Listados ====================
 
     public List<SurveySummaryResponseDTO> getSurveysByEvent(Long eventId, String performerEmail, String systemRole) {

@@ -3,10 +3,12 @@ package com.qvenly.qv_ms_events.controller.eventSurvey;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -123,5 +125,28 @@ public class SurveyController {
                 @RequestHeader("X-User-Email") String userEmail) {
         return ResponseEntity.ok(ApiResponse.success("Encuestas pendientes.",
                 surveyService.getPendingSurveys(eventId, userId, userEmail)));
+        }
+
+        //Editar encuesta en DRAFT
+        @PutMapping("/{eventId}/surveys/{surveyId}")
+        public ResponseEntity<ApiResponse<SurveyResponseDTO>> updateSurvey(
+                @PathVariable Long eventId,
+                @PathVariable Long surveyId,
+                @RequestBody SurveyRequestDTO request,
+                @RequestHeader("X-User-Email") String userEmail,
+                @RequestHeader("X-Rol")        String role) {
+        return ResponseEntity.ok(ApiResponse.success("Encuesta actualizada.",
+                surveyService.updateSurvey(surveyId, request, userEmail, role)));
+        }
+
+        // Eliminar encuesta (solo DRAFT, CANCELLED o CLOSED)
+        @DeleteMapping("/{eventId}/surveys/{surveyId}")
+        public ResponseEntity<ApiResponse<Void>> deleteSurvey(
+                @PathVariable Long eventId,
+                @PathVariable Long surveyId,
+                @RequestHeader("X-User-Email") String userEmail,
+                @RequestHeader("X-Rol")        String role) {
+        surveyService.deleteSurvey(surveyId, userEmail, role);
+        return ResponseEntity.ok(ApiResponse.success("Encuesta eliminada.", null));
         }
 }
